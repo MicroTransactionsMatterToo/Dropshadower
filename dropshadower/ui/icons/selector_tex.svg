@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="148.81488mm"
+   height="148.81488mm"
+   viewBox="0 0 148.81488 148.81488"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3.2 (091e20ef0f, 2023-11-25, custom)"
+   sodipodi:docname="selector_tex.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#3d3d3d"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="true"
+     inkscape:deskcolor="#4a4949"
+     inkscape:document-units="mm"
+     showguides="true"
+     inkscape:zoom="1.6678115"
+     inkscape:cx="157.69169"
+     inkscape:cy="302.79202"
+     inkscape:window-width="1916"
+     inkscape:window-height="1036"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <sodipodi:guide
+       position="74.407436,222.59257"
+       orientation="1,0"
+       id="guide1"
+       inkscape:locked="false" />
+    <sodipodi:guide
+       position="74.407436,222.59257"
+       orientation="0,-1"
+       id="guide2"
+       inkscape:locked="false" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1">
+    <inkscape:path-effect
+       effect="copy_rotate"
+       starting_point="114.14854,135.26316"
+       origin="103.42754,135.26316"
+       id="path-effect3"
+       is_visible="true"
+       lpeversion="1.2"
+       lpesatellites=""
+       method="normal"
+       num_copies="2"
+       starting_angle="0"
+       rotation_angle="90"
+       gap="-0.01"
+       copies_to_360="true"
+       mirror_copies="false"
+       split_items="false"
+       link_styles="false" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-29.020103,-60.855728)">
+    <circle
+       style="fill:none;fill-rule:evenodd;stroke:#eeeeee;stroke-width:5;stroke-dasharray:none;stroke-opacity:1"
+       id="path1"
+       cx="103.42754"
+       cy="135.26317"
+       r="71.90744" />
+    <path
+       style="fill:none;stroke:#eeeeee;stroke-width:1.76777;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+       d="m 93.36804,135.26316 h 20.119 m -10.0595,10.0595 v -20.119"
+       id="path2"
+       inkscape:path-effect="#path-effect3"
+       inkscape:original-d="m 93.36804,135.26316 h 20.119" />
+  </g>
+</svg>
