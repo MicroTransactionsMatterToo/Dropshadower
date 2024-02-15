@@ -22,6 +22,8 @@ var prev_rect_size: Vector2
 var angle: float setget _set_angle, _get_angle
 var magnitude: float setget _set_magnitude, _get_magnitude
 
+var enabled := true
+
 signal value_changed(angle, magnitude)
 
 
@@ -31,7 +33,7 @@ func _ready():
 	self.prev_rect_size = self.rect_size
 	
 func _gui_input(event):
-	if event is InputEventMouseButton:
+	if event is InputEventMouseButton and self.enabled:
 		var handle_rect = self.sun_handle.get_rect()
 		handle_rect = self.sun_handle.transform.xform(handle_rect)
 		if handle_rect.has_point(event.position):
@@ -49,7 +51,6 @@ func _process(delta):
 			get_local_mouse_position(), 
 			min(mouse_dist, self.handle_radius)
 		)
-		print("[%s, %s | %s | %s]" % [mouse_dist, self.handle_radius, mouse_pos, self.sun_handle.position])
 		self.emit_signal("value_changed", self.angle, self.magnitude)
 		
 		if not Input.is_mouse_button_pressed(BUTTON_LEFT):
@@ -82,30 +83,24 @@ func _notification(what):
 			self.sun_handle.scale = self.handle_base_scale * (self.rect_size / Vector2(64, 64))
 			
 func _get_angle() -> float:
-	return self.centre.angle_to_point(self.sun_handle.position)
+	return self.sun_handle.position.angle_to_point(self.centre)
 	
 func _set_angle(angle: float):
-	self.sun_handle.position = self.rotated_point(
-		self.centre, 
-		angle,
-		self._get_magnitude() * self.handle_radius
+	self.sun_handle.position = self.centre + polar2cartesian(
+		self.handle_radius * self._get_magnitude(),
+		angle + PI
 	)
 	
-	print("ANGLE SET")
 	self.emit_signal("value_changed", self.angle, self.magnitude)
 	
 func _get_magnitude() -> float:
 	return self.sun_handle.position.distance_to(self.centre) / self.handle_radius
 	
 func _set_magnitude(magnitude: float):
-	var max_point = self.rotated_point(
-		self.centre, 
-		self._get_angle(), 
-		self.handle_radius
-	)
-	self.sun_handle.position = self.centre.move_toward(
-		max_point,
-		magnitude * self.handle_radius
+	var max_point = polar2cartesian(self.handle_radius, self._get_angle())
+	self.sun_handle.position = self.centre + polar2cartesian(
+		self.handle_radius * magnitude,
+		self._get_angle()
 	)
 	
 	self.emit_signal("value_changed", self.angle, self.magnitude)

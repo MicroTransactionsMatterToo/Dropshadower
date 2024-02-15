@@ -106,12 +106,14 @@ margin_right = 245.0
 margin_bottom = 20.0
 size_flags_horizontal = 3
 size_flags_vertical = 4
+value = 100.0
 
 [node name="SS_Spinbox" type="SpinBox" parent="VBox/Sliders"]
 margin_left = 249.0
 margin_right = 323.0
 margin_bottom = 24.0
 size_flags_horizontal = 9
+value = 100.0
 align = 2
 suffix = "%"
 
@@ -128,6 +130,7 @@ margin_right = 245.0
 margin_bottom = 48.0
 size_flags_horizontal = 3
 size_flags_vertical = 4
+value = 100.0
 
 [node name="SD_Spinbox" type="SpinBox" parent="VBox/Sliders"]
 margin_left = 249.0
@@ -135,6 +138,9 @@ margin_top = 28.0
 margin_right = 323.0
 margin_bottom = 52.0
 size_flags_horizontal = 9
+min_value = 1.0
+value = 100.0
+allow_greater = true
 align = 2
 suffix = "%"
 
@@ -152,7 +158,8 @@ margin_bottom = 76.0
 size_flags_horizontal = 3
 size_flags_vertical = 4
 min_value = 1.0
-value = 1.0
+page = 1.0
+value = 10.0
 
 [node name="BR_Spinbox" type="SpinBox" parent="VBox/Sliders"]
 margin_left = 249.0
@@ -160,4 +167,7 @@ margin_top = 56.0
 margin_right = 323.0
 margin_bottom = 80.0
 size_flags_horizontal = 9
+min_value = 1.0
+value = 10.0
+allow_greater = true
 align = 2

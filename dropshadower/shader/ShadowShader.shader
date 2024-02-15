@@ -1,6 +1,7 @@
 shader_type canvas_item;
 
 const float PI = 3.1415926538;
+const float PIT = 6.283185307;
 const float RAD = PI / 2.0;
 const float SCALE = 2.0;
 
@@ -16,6 +17,8 @@ uniform float shadow_dropoff = 1.0;
 uniform float shadow_strength = 1.0;
 
 uniform float blur_radius = 10.0;
+
+uniform float node_rotation = 0.0;
 
 
 uniform bool dropoff = true;
@@ -85,14 +88,14 @@ vec4 blend(vec4 col_1, vec4 col_2) {
 vec2 toPolar(vec2 uv, vec2 center) {
 	vec2 dir = uv - center;
 	float radius = length(dir) * 2.0;
-	float angle = atan(dir.y, dir.x) / (PI * 2.0);
+	float angle = atan(dir.y, dir.x);
 	return vec2(angle, radius);
 }
 
 vec2 toCartesian(vec2 polar, vec2 center) {
 	vec2 cartesian;
-	cartesian.y = cos(polar.x * (PI * 2.0));
-	cartesian.x = sin(polar.x * (PI * 2.0));
+	cartesian.y = cos(polar.x);
+	cartesian.x = sin(polar.x);
 	cartesian *= polar.y;
 	cartesian += center;
 	return cartesian;
@@ -209,7 +212,8 @@ float gauss_blur(float radius, vec2 step, sampler2D tex, vec2 uv) {
 }
 
 float sun_ang() {
-	return (1.0 - sun_angle) - 0.25;
+	float adjust_angle = (PIT - (sun_angle * PIT)) + node_rotation;
+	return (PI + adjust_angle) - (PIT / 4.0);
 }
 
 void fragment() {
@@ -230,7 +234,7 @@ void fragment() {
 	S_COL.a *= shadow_strength;
 	
 	COLOR = blend(
-		texture_scaled(TEXTURE, P_UV), 
+		texture_scaled(TEXTURE, P_UV),
 		S_COL
 	);
 }
