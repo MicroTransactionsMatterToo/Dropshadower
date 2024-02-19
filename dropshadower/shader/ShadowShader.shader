@@ -78,8 +78,10 @@ vec4 texture_scaled(sampler2D tex, vec2 uv) {
 vec4 blend(vec4 col_1, vec4 col_2) {
 	if (col_1.a == 0.0) {
 	 	return col_2;
-	} else if (col_1.a == 1.0) {
-		return mix(col_2, col_1, col_1.a);
+	} else if (col_1.a > 0.0) {
+		vec4 rval = mix(col_2, col_1, col_1.a);
+		rval.a = max(col_1.a, col_2.a);
+		return rval;
 	} else {
 		return col_2;
 	}

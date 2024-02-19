@@ -25,6 +25,7 @@ var magnitude: float setget _set_magnitude, _get_magnitude
 var enabled := true
 
 signal value_changed(angle, magnitude)
+signal submit()
 
 
 
@@ -43,6 +44,9 @@ func _gui_input(event):
 				
 
 func _process(delta):
+	if not self.enabled:
+		return
+		
 	self.update()
 	if self.handle_grabbed:
 		var mouse_pos = self.get_local_mouse_position()
@@ -54,6 +58,7 @@ func _process(delta):
 		self.emit_signal("value_changed", self.angle, self.magnitude)
 		
 		if not Input.is_mouse_button_pressed(BUTTON_LEFT):
+			self.emit_signal("submit")
 			self.handle_grabbed = false
 			
 	if self.mouse_inside:
