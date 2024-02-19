@@ -10,9 +10,13 @@ var sidepanel
 var sidepanel_toggle
 
 var storage setget _set_storage, _get_storage
+var _internal_storage = {}
+var legacy_storage_node
+var using_legacy_storage = false
 
 
 const RES_PATH = "res://dropshadower/"
+const STORAGE_NODE_ID = 0x954AD03
 
 enum SelectableTypes {
 	Invalid 		= 0,
@@ -76,14 +80,12 @@ func start() -> void:
 	Engine.set_meta("DropshadowCore", self)
 	logv("Engine meta set")
 
-	logv(JSON.print(Global.ModMapData, "\t"))
-	Global.ModMapData["TEST"] = {
-		"FUCK": 2.0
-	}
 	
 
 	self._bootstrap_sidepanel()
 	self._bootstrap_selectpanel()
+	if Global.ModMapData == null:
+		self._bootstrap_legacy_storage()
 	self._load_data()
 
 
@@ -104,6 +106,32 @@ func _bootstrap_selectpanel() -> void:
 	self.sidepanel_toggle.connect("toggled", self, "on_sidepanel_toggle")
 	logv("SelectTool Panel Button added")
 
+func _bootstrap_legacy_storage() -> void:
+	self.using_legacy_storage = true
+	if Global.World.GetNodeByID(STORAGE_NODE_ID) != null:
+		self.legacy_storage_node = Global.World.GetNodeByID(STORAGE_NODE_ID)
+		var data_parsed: JSONParseResult = JSON.parse(self.legacy_storage_node.text)
+		if data_parsed.error != OK:
+			loge("Failed to load legacy storage data, error was %s" % data_parsed.error)
+			return
+		self.storage = data_parsed.result
+		logv("Loaded legacy data: %s" % data_parsed.result)
+	else:
+		logv("Creating legacy storage Text object")
+		self.legacy_storage_node = Global.World.AllLevels[0].Texts.CreateText()
+		self.legacy_storage_node.Load({
+			"text": "{}",
+			"position": var2str(Vector2(-100000, -10000)),
+			"font_name": "Papyrus",
+			"font_size": 1,
+			"font_color": "00000000",
+			"box_shape": 0
+		})
+		self.legacy_storage_node.set_meta("node_id", STORAGE_NODE_ID)
+		Global.World.SetNodeID(self.legacy_storage_node, STORAGE_NODE_ID)
+	
+	
+
 func _load_data() -> void:
 	logi("Loading shadow data")
 	logv("ModMapData for Dropshadower: %s" % JSON.print(self.storage, "\t"))
@@ -115,7 +143,9 @@ func _load_data() -> void:
 		var err = shadow_data.restore()
 		if err != OK:
 			loge("Failed to restore shadow data, error was 0x%X" % err)
-		self.storage[entry] = shadow_data
+		if self.using_legacy_storage:
+			self.storage.erase(entry)
+		self.storage[int(entry)] = shadow_data.as_dict()
 
 # ===== SHADOW FUNCS =====
 func set_node_shadow(node: Node2D) -> int:
@@ -127,7 +157,12 @@ func set_node_shadow(node: Node2D) -> int:
 		logv("Creating ShadowStruct failed: 0x%X" % err)
 		return err
 	
-	self.storage[shadow_data.node_id] = shadow_data.as_dict()
+	if self.using_legacy_storage:
+		self._internal_storage[shadow_data.node_id] = shadow_data.as_dict()
+		self.update_legacy_data()
+	else:
+		self.storage[shadow_data.node_id] = shadow_data.as_dict()
+
 	return OK
 
 func get_node_shadow(node: Node2D):
@@ -150,6 +185,13 @@ func erase_node_shadow(node: Node2D):
 		return null
 
 	self.storage.erase(node.get_meta("node_id"))
+	if self.using_legacy_storage:
+		self.update_legacy_data()
+
+func update_legacy_data():
+	if self.legacy_storage_node != null:
+		self.legacy_storage_node.text = JSON.print(self.storage)
+		logv("Updated text node: %s" % JSON.print(self.storage, "\t"))
 	
 func on_sidepanel_toggle(pressed):
 	self.sidepanel.toggled = pressed
@@ -158,6 +200,9 @@ func on_sidepanel_toggle(pressed):
 
 # --- self.storage get
 func _get_storage() -> Dictionary:
+	if self.using_legacy_storage:
+		return self._internal_storage
+
 	if Global.ModMapData["Dropshadower"] == null:
 		Global.ModMapData["Dropshadower"] = {}
 	
@@ -165,7 +210,10 @@ func _get_storage() -> Dictionary:
 
 # --- self.storage set
 func _set_storage(val: Dictionary) -> void:
-	Global.ModMapData["Dropshadower"] = val
+	if self.using_legacy_storage:
+		self._internal_storage = val
+	else:
+		Global.ModMapData["Dropshadower"] = val
 
 class ShadowStruct extends Reference:
 	var node_id: int

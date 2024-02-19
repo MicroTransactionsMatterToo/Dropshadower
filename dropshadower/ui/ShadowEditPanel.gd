@@ -141,7 +141,7 @@ func _on_aux_slider_change(val):
 	self.commit_shadows()
 	
 func _toggle_disabled(button_state):
-	self.disabled = button_state
+	self.disabled = !button_state
 	
 func _block_signals(val):
 	self.ShadowControl.set_block_signals(val)
