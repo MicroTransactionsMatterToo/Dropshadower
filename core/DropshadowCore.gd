@@ -84,8 +84,7 @@ func start() -> void:
 
 	self._bootstrap_sidepanel()
 	self._bootstrap_selectpanel()
-	if Global.ModMapData == null:
-		self._bootstrap_legacy_storage()
+	self._bootstrap_legacy_storage()
 	self._load_data()
 
 
@@ -116,6 +115,14 @@ func _bootstrap_legacy_storage() -> void:
 			return
 		self.storage = data_parsed.result
 		logv("Loaded legacy data: %s" % data_parsed.result)
+		
+		if Global.ModMapData != null:
+			logv("ModMapData found and legacy data found, migrating")
+			self.using_legacy_storage = false
+			self.storage = self._internal_storage
+			self.legacy_storage_node.queue_free()
+			Global.World.DeleteNodeByID(STORAGE_NODE_ID)
+			return
 	else:
 		logv("Creating legacy storage Text object")
 		self.legacy_storage_node = Global.World.AllLevels[0].Texts.CreateText()
@@ -129,6 +136,7 @@ func _bootstrap_legacy_storage() -> void:
 		})
 		self.legacy_storage_node.set_meta("node_id", STORAGE_NODE_ID)
 		Global.World.SetNodeID(self.legacy_storage_node, STORAGE_NODE_ID)
+		
 	
 	
 

@@ -17,6 +17,8 @@ var _disabled := true
 var _selection_state = 0
 var _previous_ref_node = null
 
+var _delete_input_list
+
 signal dropshadow_updated(node)
 
 
@@ -82,6 +84,19 @@ func _ready():
 func _process(delta):
 	self.visible = self.toggled
 	
+	# Handle keyboard inputs so that the backspace key is actually usable
+	var current_focus_owner = self.get_focus_owner()
+	if current_focus_owner != null:
+		if self.is_a_parent_of(current_focus_owner) and self._delete_input_list == null:
+			logv("Current focus owner is a child, disable 'delete' action")
+			self._delete_input_list = InputMap.get_action_list("delete")
+			InputMap.action_erase_events("delete")
+		elif not self.is_a_parent_of(current_focus_owner) and self._delete_input_list != null:
+			logv("Current focus is no longer a child, enable 'delete' action")
+			for event in self._delete_input_list:
+				InputMap.action_add_event("delete", event)
+			self._delete_input_list = null
+	
 	if Global == null: return
 	
 	var select_tool = Global.Editor.Tools["SelectTool"]
@@ -106,7 +121,10 @@ func _process(delta):
 	if len(selected) == 0:
 		self._previous_ref_node = null
 		
-
+func _gui_input(event):
+	# Make focus behaviour a bit more intuitive
+	if event is InputEventMouseButton:
+		self.propagate_call("release_focus", [])
 
 func on_dial_change(angle, magn):
 	self._set_slider_blocking(true)
@@ -240,7 +258,6 @@ func _set_disabled(val: bool) -> void:
 		self.VC.propagate_call("set", ["disabled", false])
 		self.VC.propagate_call("set", ["editable", true])
 		self.ShadowControl.enabled = true
-		self.update_selected_props(self.ShadowControl.angle, self.ShadowControl.magnitude)
 		self.commit_shadows()
 		
 func _get_disabled() -> bool:
