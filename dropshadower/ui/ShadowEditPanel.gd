@@ -199,7 +199,7 @@ func update_selected_props(angle, magn):
 			var item_sprite = item.Sprite
 			if not item_sprite.material is ShaderMaterial:
 				var material = ShaderMaterial.new()
-				material.shader = ResourceLoader.load(Global.Root + "../dropshadower/shader/ShadowShader.shader", "", true)
+				material.shader = ResourceLoader.load("res://dropshadower/shader/ShadowShader.shader", "Shader", false)
 
 				item_sprite.material = material
 			

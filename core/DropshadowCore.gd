@@ -71,7 +71,7 @@ func start() -> void:
 		loge("Loading dropshadower.zip failed, aborting")
 		return
 	
-	self.ShadowShader = ResourceLoader.load(RES_PATH + "shader/ShadowShader.shader", "Shader", true)
+	self.ShadowShader = ResourceLoader.load(RES_PATH + "shader/ShadowShader.shader", "Shader", false)
 	self.SidepanelScene = load("res://dropshadower/ui/ShadowEditPanel.tscn")
 	logv("Shader and Scenes loaded")
 
@@ -124,6 +124,10 @@ func _bootstrap_legacy_storage() -> void:
 			Global.World.DeleteNodeByID(STORAGE_NODE_ID)
 			return
 	else:
+		if Global.ModMapData != null:
+			logv("Version 1.1.0.6+, not using text object for storage")
+			self.using_legacy_storage = false
+			return
 		logv("Creating legacy storage Text object")
 		self.legacy_storage_node = Global.World.AllLevels[0].Texts.CreateText()
 		self.legacy_storage_node.Load({
@@ -283,7 +287,7 @@ class ShadowStruct extends Reference:
 	func _init():
 		self.Global = Engine.get_meta("DropshadowGlobal")
 		self.SelectTool = Global.Editor.Tools["SelectTool"]
-		self.DropShader = ResourceLoader.load(Global.Root + "../dropshadower/shader/ShadowShader.shader", "", true)
+		self.DropShader = ResourceLoader.load(RES_PATH + "shader/ShadowShader.shader", "Shader", false)
 
 	func restore() -> int:
 		if not Engine.has_meta("DropshadowGlobal"):
