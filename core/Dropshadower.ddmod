@@ -4,5 +4,5 @@
 	"version": "1.0.0",
 	"author": "MBMM",
 	"description": "Adds semi-automated dropshadows to Dungeondraft",
-	"dd_version": "1.1.0.0",
+	"dd_version": "1.1.0.4",
 }
