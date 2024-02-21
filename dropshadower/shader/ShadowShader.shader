@@ -13,10 +13,11 @@ const float blur_offset[3] = {0.0, 2.0, 3.2307692308};
 // --- INPUT PARAMS ---
 uniform float sun_angle : hint_range(0.0, 1.0) = 0.0;
 uniform float sun_intensity = 0.05;
-uniform float shadow_dropoff = 1.0;
+uniform int shadow_quality : hint_range(1, 999) = 4;
+uniform int shadow_steps : hint_range(1, 999) = 16;
 uniform float shadow_strength = 1.0;
 
-uniform float blur_radius = 10.0;
+uniform float blur_radius : hint_range(0.1, 200.0, 1.0) = 10.0;
 
 uniform float node_rotation = 0.0;
 
@@ -40,12 +41,6 @@ vec2 reverse_uv_scale(vec2 uv, bool center) {
 	return uv;
 }
 
-vec2 map_uv(vec2 vertex, sampler2D tex) {
-	ivec2 tex_size = textureSize(tex, 0);
-	vertex.x /= float(tex_size.x);
-	vertex.y /= float(tex_size.y);
-	return vertex;
-}
 
 void vertex() {
 	SCALE_TRANSFORM = mat2(
@@ -55,8 +50,6 @@ void vertex() {
 	VERTEX *= SCALE_TRANSFORM;
 	
 	float BLUR_WEIGHTS_L[40];
-	
-	
 	
 }
 
@@ -136,86 +129,30 @@ vec2 excess_xy(vec2 uv) {
 	return output;
 }
 
-float shadow_gradient(vec2 uv, vec2 base_uv) {
-	if (uv_clamp(uv)) { return 0.0; }
-	
-	vec2 dir = uv - base_uv;
-	float angle = atan(dir.y, dir.x);
-	vec2 shadow_vec = vec2(-1.0, angle);
-	
-	vec2 TRANS = toCartesian(
-		vec2(sun_angle, 2.0 * sun_intensity), vec2(0.0)
-	) * 4.0;
-	
-	vec2 origin = (translate(TRANS) * vec3(0.5)).xy;
-	if (dropoff) {
-		return 1.0 - distance(origin, uv);
-	} else {
-		return 1.0;
-	}
-}
-
-float _mat3_row(vec3 row, int column) {
-	switch (column) {
-		case 0: return row[0];
-		case 1: return row[1];
-		case 2: return row[2];
-	}
-}
-
-float mat3_index(mat3 mat, int row, int column) {
-	switch (row) {
-		case 0: return _mat3_row(mat[0], column);
-		case 1: return _mat3_row(mat[1], column);
-		case 2: return _mat3_row(mat[2], column);
-	}
-}
-
-
-
-float blur(vec2 uv, sampler2D tex, vec2 pixel_size) {
-	float alpha = 0.0;
-	mat3 kernel = mat3(
-		vec3(0.05, 0.05, 0.05),
-		vec3(0.05, 0.60, 0.05),
-		vec3(0.05, 0.05, 0.05)
-	);
-	ivec2 uv_texel = ivec2(uv * pixel_size);
-	for (int x = 0; x < 2; x++) {
-		for (int y = 0; y < 2; y++) {
-			vec2 offset = vec2(float(x - 1), float(y - 1));
-			ivec2 sample_texel = uv_texel + ivec2(x - 1, y - 1);
-			vec2 sample_uv = uv - (offset * (pixel_size));
-			if (uv_clamp(sample_uv)) { continue; }
-			alpha += texture_scaled(tex, sample_uv).a * mat3_index(kernel, x, y);
-		}
-	}
-	
-	return alpha;
-}
-
-float gauss_blur(float radius, vec2 step, sampler2D tex, vec2 uv) {
-	float weights[41] = { 0.012303555535451273, 0.024616263724833186, 0.024627959209285916, 0.024639044267560715, 0.024649518070534567, 0.02465937983457507, 0.02466862882163816, 0.024677264339360162, 0.024685285741144175, 0.024692692426240774, 0.024699483839822955, 0.02470565947305546, 0.024711218863158267, 0.024716161593464424, 0.02472048729347208, 0.02472419563889075, 0.024727286351681893, 0.02472975920009359, 0.024731613998689547, 0.024732850608372263, 0.0247334689364004, 0.0247334689364004, 0.024732850608372263, 0.024731613998689547, 0.02472975920009359, 0.024727286351681893, 0.02472419563889075, 0.02472048729347208, 0.024716161593464424, 0.024711218863158267, 0.02470565947305546, 0.024699483839822955, 0.024692692426240774, 0.024685285741144175, 0.024677264339360162, 0.02466862882163816, 0.02465937983457507, 0.024649518070534567, 0.024639044267560715, 0.024627959209285916, 0.024616263724833186 };
-	float offsets[41] = { -40.5, -38.9999390625003, -36.99994218750026, -34.999945312500216, -32.99994843750018, -30.99995156250015, -28.99995468750012, -26.999957812500096, -24.999960937500084, -22.999964062500062, -20.999967187500047, -18.999970312500032, -16.999973437500024, -14.99997656250002, -12.99997968750001, -10.999982812500008, -8.999985937500004, -6.999989062500001, -4.999992187500001, -2.9999953124999994, -0.9999984375, 0.9999984375, 2.9999953124999994, 4.999992187500001, 6.999989062500001, 8.999985937500004, 10.999982812500008, 12.99997968750001, 14.99997656250002, 16.999973437500024, 18.999970312500032, 20.999967187500047, 22.999964062500062, 24.999960937500084, 26.999957812500096, 28.99995468750012, 30.99995156250015, 32.99994843750018, 34.999945312500216, 36.99994218750026, 38.9999390625003 };
-	int size = 41;
-
-	
-	vec2 s = radius / (float(size) - 1.0) * step / vec2(textureSize(tex, 0));
-	float alpha = 0.0;
-	for (int i = 0; i < size; i++) {
-		if (!uv_clamp(uv + offsets[i] * s)) {
-			alpha += (weights[i] * texture(tex, uv + offsets[i] * s).a);
-		} else {
-			
-		}
-	}	
-	
-	return alpha;
-}
-
 float sun_ang() {
 	float adjust_angle = (PIT - (sun_angle * PIT)) + node_rotation;
 	return (PI + adjust_angle) - (PIT / 4.0);
+}
+
+// Xor's gausian blur function 
+// Link: https://xorshaders.weebly.com/tutorials/blur-shaders-5-part-2
+// With minor modifications to account for UV tricks
+vec4 texture_xorgaussian(sampler2D tex, vec2 uv, vec2 pixel_size, float blurriness, int iterations, int quality){
+	float pi = 6.28;
+	
+	vec2 radius = blurriness / (1.0 / pixel_size).xy;
+	vec4 blurred_tex = texture(tex, uv);
+	
+	for(float d = 0.0; d < pi; d += pi / float(iterations)){
+		for( float i = 1.0 / float(quality); i <= 1.0; i += 1.0 / float(quality) ){
+			vec2 directions = uv + vec2(cos(d), sin(d)) * radius * i;
+			if (uv_clamp(directions)) { continue; }
+			blurred_tex += texture(tex, directions);
+		}
+	}
+	blurred_tex /= float(quality) * float(iterations) + 1.0;
+	
+	return blurred_tex;
 }
 
 void fragment() {
@@ -226,18 +163,22 @@ void fragment() {
 	vec2 BLUR_DIR = toCartesian(
 		vec2(sun_ang(), 1.0), vec2(0.0)
 	);
+	vec2 ORTHO_BLUR_DIR = toCartesian(
+		vec2(sun_ang() + (PI / 2.0), 1.0), vec2(0.0)
+	);
 	vec2 S_UV = (translate(TRANS) * vec3(P_UV, 1.0)).xy;
 	vec4 S_COL = texture_scaled(TEXTURE, S_UV);
 	S_COL.rgb = vec3(0.0);
 	if (dropoff) {
-		S_COL.a = gauss_blur(blur_radius, BLUR_DIR, TEXTURE, S_UV) / shadow_dropoff;
+		S_COL = texture_xorgaussian(TEXTURE, S_UV, TEXTURE_PIXEL_SIZE, blur_radius, shadow_steps, shadow_quality);
+		S_COL.rgb = vec3(0.0);
 	}
 	
 	S_COL.a *= shadow_strength;
+	S_COL.a = clamp(S_COL.a, 0.0, 1.0);
 	
 	COLOR = blend(
 		texture_scaled(TEXTURE, P_UV),
 		S_COL
 	);
 }
-
