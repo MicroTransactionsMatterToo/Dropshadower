@@ -124,7 +124,8 @@ func _process(delta):
 func _gui_input(event):
 	# Make focus behaviour a bit more intuitive
 	if event is InputEventMouseButton:
-		self.propagate_call("release_focus", [])
+		if event.button_index in [BUTTON_LEFT, BUTTON_RIGHT, BUTTON_MIDDLE]:
+			self.propagate_call("release_focus", [])
 
 func on_dial_change(angle, magn):
 	self._set_slider_blocking(true)
