@@ -20,6 +20,7 @@ var handle_radius: float setget , _get_handle_radius
 var prev_rect_size: Vector2
 
 var angle: float setget _set_angle, _get_angle
+var angle_degrees: float setget , _get_angle_deg
 var magnitude: float setget _set_magnitude, _get_magnitude
 
 var enabled := true
@@ -88,12 +89,15 @@ func _notification(what):
 			self.sun_handle.scale = self.handle_base_scale * (self.rect_size / Vector2(64, 64))
 			
 func _get_angle() -> float:
-	return self.sun_handle.position.angle_to_point(self.centre)
+	return fposmod(self.sun_handle.position.angle_to_point(self.centre), 2 * PI)
+	
+func _get_angle_deg() -> float:
+	return rad2deg(self.angle)
 	
 func _set_angle(angle: float):
 	self.sun_handle.position = self.centre + polar2cartesian(
 		self.handle_radius * self._get_magnitude(),
-		angle + PI
+		angle
 	)
 	
 	self.emit_signal("value_changed", self.angle, self.magnitude)

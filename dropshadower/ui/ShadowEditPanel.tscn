@@ -30,7 +30,7 @@ text = "Enable"
 [node name="V" type="VBoxContainer" parent="VBox"]
 margin_top = 42.0
 margin_right = 323.0
-margin_bottom = 298.0
+margin_bottom = 326.0
 mouse_filter = 0
 
 [node name="DialControlM" type="MarginContainer" parent="VBox/V"]
@@ -107,10 +107,10 @@ size_flags_horizontal = 3
 [node name="Sliders" type="GridContainer" parent="VBox/V"]
 margin_top = 176.0
 margin_right = 323.0
-margin_bottom = 256.0
+margin_bottom = 284.0
 columns = 3
 
-[node name="Label" type="Label" parent="VBox/V/Sliders"]
+[node name="SS_Label" type="Label" parent="VBox/V/Sliders"]
 margin_top = 5.0
 margin_right = 105.0
 margin_bottom = 19.0
@@ -124,25 +124,29 @@ margin_bottom = 20.0
 focus_mode = 0
 size_flags_horizontal = 3
 size_flags_vertical = 4
+max_value = 200.0
 value = 100.0
+allow_greater = true
 
 [node name="SS_Spinbox" type="SpinBox" parent="VBox/V/Sliders"]
 margin_left = 249.0
 margin_right = 323.0
 margin_bottom = 24.0
-focus_next = NodePath("../SD_Spinbox")
+focus_next = NodePath("../SQ_Spinbox")
 size_flags_horizontal = 9
+max_value = 200.0
 value = 100.0
+allow_greater = true
 align = 2
 suffix = "%"
 
-[node name="Label2" type="Label" parent="VBox/V/Sliders"]
+[node name="SQ_Label" type="Label" parent="VBox/V/Sliders"]
 margin_top = 33.0
 margin_right = 105.0
 margin_bottom = 47.0
-text = "Shadow Dropoff"
+text = "Shadow Quality"
 
-[node name="SD_Slider" type="HSlider" parent="VBox/V/Sliders"]
+[node name="SQ_Slider" type="HSlider" parent="VBox/V/Sliders"]
 margin_left = 109.0
 margin_top = 32.0
 margin_right = 245.0
@@ -150,9 +154,11 @@ margin_bottom = 48.0
 focus_mode = 0
 size_flags_horizontal = 3
 size_flags_vertical = 4
-value = 100.0
+max_value = 999.0
+value = 4.0
+rounded = true
 
-[node name="SD_Spinbox" type="SpinBox" parent="VBox/V/Sliders"]
+[node name="SQ_Spinbox" type="SpinBox" parent="VBox/V/Sliders"]
 margin_left = 249.0
 margin_top = 28.0
 margin_right = 323.0
@@ -160,12 +166,12 @@ margin_bottom = 52.0
 focus_next = NodePath("../BR_Spinbox")
 size_flags_horizontal = 9
 min_value = 1.0
-value = 100.0
-allow_greater = true
+max_value = 50.0
+value = 4.0
+rounded = true
 align = 2
-suffix = "%"
 
-[node name="Label3" type="Label" parent="VBox/V/Sliders"]
+[node name="BR_Label" type="Label" parent="VBox/V/Sliders"]
 margin_top = 61.0
 margin_right = 105.0
 margin_bottom = 75.0
@@ -182,6 +188,7 @@ size_flags_vertical = 4
 min_value = 1.0
 page = 1.0
 value = 10.0
+allow_greater = true
 
 [node name="BR_Spinbox" type="SpinBox" parent="VBox/V/Sliders"]
 margin_left = 249.0
@@ -191,5 +198,38 @@ margin_bottom = 80.0
 size_flags_horizontal = 9
 min_value = 1.0
 value = 10.0
+allow_greater = true
+align = 2
+
+[node name="SS2_Label" type="Label" parent="VBox/V/Sliders"]
+margin_top = 89.0
+margin_right = 105.0
+margin_bottom = 103.0
+text = "Shadow Steps"
+
+[node name="SS2_Slider" type="HSlider" parent="VBox/V/Sliders"]
+margin_left = 109.0
+margin_top = 88.0
+margin_right = 245.0
+margin_bottom = 104.0
+focus_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 64.0
+value = 16.0
+rounded = true
+allow_greater = true
+
+[node name="SS2_Spinbox" type="SpinBox" parent="VBox/V/Sliders"]
+margin_left = 249.0
+margin_top = 84.0
+margin_right = 323.0
+margin_bottom = 108.0
+focus_next = NodePath("../SQ_Spinbox")
+size_flags_horizontal = 9
+min_value = 1.0
+max_value = 64.0
+value = 16.0
+rounded = true
 allow_greater = true
 align = 2

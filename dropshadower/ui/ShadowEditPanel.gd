@@ -21,6 +21,13 @@ var _delete_input_list
 
 signal dropshadow_updated(node)
 
+const control_nodes = [
+	["SS", "shadow_strength"],
+	["SQ", "shadow_quality"],
+	["BR", "blur_radius"],
+	["SS2", "shadow_steps"]
+]
+
 
 # ===== LOGGING =====
 const LOG_LEVEL = 4
@@ -55,13 +62,7 @@ func _ready():
 	self.ShadowControl.connect("value_changed", self, "on_dial_change")
 	self.ShadowControl.connect("submit", self, "commit_shadows")
 	logv("Connected value changed")
-	$VBox/V/Sliders/SD_Slider.share($VBox/V/Sliders/SD_Spinbox)
-	$VBox/V/Sliders/SD_Slider.connect("value_changed", self, "_on_aux_slider_change")
-	$VBox/V/Sliders/SS_Slider.share($VBox/V/Sliders/SS_Spinbox)
-	$VBox/V/Sliders/SS_Slider.connect("value_changed", self, "_on_aux_slider_change")
-	$VBox/V/Sliders/BR_Slider.share($VBox/V/Sliders/BR_Spinbox)
-	$VBox/V/Sliders/BR_Slider.connect("value_changed", self, "_on_aux_slider_change")
-	logv("Shared sliders")
+	self._setup_controls()
 	
 	$VBox/V/ShadowControl/AngleVal.connect("value_changed", self, "_on_angle_change")
 	$VBox/V/ShadowControl/MagnVal.connect("value_changed", self, "_on_magn_change")
@@ -80,12 +81,30 @@ func _ready():
 		self.DropshadowCore = Engine.get_meta("DropshadowCore")
 		
 	self.disabled = true
+
+func _exit_tree():
+	Engine.remove_meta("DropshadowCore")
+	Engine.remove_meta("DropshadowGlobal")
+	Engine.remove_meta("DropshadowScript")
+
+func _setup_controls():
+	for entry in self.control_nodes:
+		var spinbox = self.VC.get_node("Sliders/%s_Spinbox" % entry[0])
+		var slider = self.VC.get_node("Sliders/%s_Slider" % entry[0])
+		slider.share(spinbox)
+		slider.connect("value_changed", self, "_on_aux_slider_change")
 	
 func _process(delta):
 	self.visible = self.toggled
 	
 	# Handle keyboard inputs so that the backspace key is actually usable
 	var current_focus_owner = self.get_focus_owner()
+	if current_focus_owner == null and self._delete_input_list != null:
+		logv("Re-enabled delete keys")
+		for event in self._delete_input_list:
+			InputMap.action_add_event("delete", event)
+		self._delete_input_list = null
+			
 	if current_focus_owner != null:
 		if self.is_a_parent_of(current_focus_owner) and self._delete_input_list == null:
 			logv("Current focus owner is a child, disable 'delete' action")
@@ -103,13 +122,11 @@ func _process(delta):
 	var selected = select_tool.Selected
 	
 	# Check if first selected object has a shadow already, and if so, use those values
-	if not self.disabled:
+	if not self.disabled or DropshadowCore.node_shadow_visible(selected[0]):
 		if self.Global == null: return
 
 		for item in selected:
-			if item.Sprite == null: continue
-			if item.Sprite.material.shader == null: continue
-			if item.Sprite.material.get_shader_param("sun_angle") == null: continue
+			if not DropshadowCore.node_has_shadow(item): continue
 			if item == self._previous_ref_node:
 				break
 			
@@ -124,16 +141,27 @@ func _process(delta):
 func _gui_input(event):
 	# Make focus behaviour a bit more intuitive
 	if event is InputEventMouseButton:
+		logv(event.button_index in [BUTTON_LEFT])
 		if event.button_index in [BUTTON_LEFT, BUTTON_RIGHT, BUTTON_MIDDLE]:
+			logv(self._delete_input_list)
 			self.propagate_call("release_focus", [])
 
 func on_dial_change(angle, magn):
+	logv("Dial Change | A: %.2f, M: %.2f" % [angle, magn])
 	self._set_slider_blocking(true)
-	$VBox/V/ShadowControl/AngleVal.value = rad2deg(angle) + 180
+	$VBox/V/ShadowControl/AngleVal.value = rad2deg(angle)
 	$VBox/V/ShadowControl/MagnVal.value = magn * 100.0
 	self._set_slider_blocking(false)
 	
 	self.update_selected_props(angle, magn)
+	
+func get_control_values() -> Dictionary:
+	var values = {}
+	for entry in self.control_nodes:
+		var node = self.VC.get_node("Sliders/%s_Spinbox" % entry[0])
+		values[entry[1]] = node.value 
+		
+	return values
 	
 func _set_slider_blocking(blocking: bool):
 	$VBox/V/ShadowControl/AngleVal.set_block_signals(blocking)
@@ -141,7 +169,8 @@ func _set_slider_blocking(blocking: bool):
 	
 func _on_angle_change(value):
 	self.ShadowControl.set_block_signals(true)
-	self.ShadowControl.angle = (value / 360.0) * (2 * PI)
+	logv("Setting angle to %.2f" % deg2rad(value))
+	self.ShadowControl.angle = deg2rad(value)
 	self.ShadowControl.set_block_signals(false)
 	
 	self.update_selected_props(self.ShadowControl.angle, self.ShadowControl.magnitude)
@@ -156,6 +185,7 @@ func _on_magn_change(value: float):
 	self.commit_shadows()
 	
 func _on_aux_slider_change(val):
+	logv("AUX CHANGE")
 	self.update_selected_props(self.ShadowControl.angle, self.ShadowControl.magnitude)
 	self.commit_shadows()
 	
@@ -165,29 +195,29 @@ func _toggle_disabled(button_state):
 func _block_signals(val):
 	self.ShadowControl.set_block_signals(val)
 
-	$VBox/V/Sliders/SD_Spinbox.set_block_signals(val)
-	$VBox/V/Sliders/SS_Spinbox.set_block_signals(val)
-	$VBox/V/Sliders/BR_Spinbox.set_block_signals(val)
+	for entry in self.control_nodes:
+		self.VC.get_node("%s_Slider" % entry[0]).set_block_signals(val)
 	$VBox/V/ShadowControl/AngleVal.set_block_signals(val)
 	$VBox/V/ShadowControl/MagnVal.set_block_signals(val)
 	
 func update_controls_from_prop(prop):
-	var spriteshader: ShaderMaterial = prop.Sprite.material
+	if not DropshadowCore.node_has_shadow(prop): return
+	var node_shadow = DropshadowCore.get_node_shadow(prop)
+	if node_shadow == null: return
+	
+	var shadow_mat: ShaderMaterial = node_shadow.material
+	
+	self._block_signals(true)
+	
+	self.ShadowControl.angle = shadow_mat.get_shader_param("sun_angle")
+	self.VC.get_node("ShadowControl/AngleVal").value = rad2deg(self.ShadowControl.angle)
+	self.ShadowControl.magnitude = shadow_mat.get_shader_param("sun_intensity") * 10
+	
+	for entry in self.control_nodes:
+		self.VC.get_node("%s_Slider" % entry[0]).value = shadow_mat.get_shader_param(entry[1])
 		
-	self._block_signals(true)	
-	logv("Sun Intensity: %.2f" % spriteshader.get_shader_param("sun_intensity") * 10.0)
-	self.ShadowControl.magnitude = spriteshader.get_shader_param("sun_intensity") * 10.0
-	logv("Sun Angle: %.2f" % (2*PI) * spriteshader.get_shader_param("sun_angle"))
-	self.ShadowControl.angle =	((2*PI) * spriteshader.get_shader_param("sun_angle")) - PI
-	
-	$VBox/V/ShadowControl/AngleVal.value = rad2deg(self.ShadowControl.angle) + 180
-	$VBox/V/ShadowControl/MagnVal.value = self.ShadowControl.magnitude * 100.0
-	
-	$VBox/V/Sliders/SD_Spinbox.value = spriteshader.get_shader_param("shadow_dropoff") * 100.0
-	$VBox/V/Sliders/SS_Spinbox.value = spriteshader.get_shader_param("shadow_strength") * 100.0
-	$VBox/V/Sliders/BR_Spinbox.value = spriteshader.get_shader_param("blur_radius")
-	
 	self._block_signals(false)
+	
 
 func update_selected_props(angle, magn):
 	if self.Global == null: return
@@ -196,20 +226,21 @@ func update_selected_props(angle, magn):
 	var selected = select_tool.Selected
 	
 	for item in select_tool.Selected:
-		if item.Sprite != null:
-			var item_sprite = item.Sprite
-			if not item_sprite.material is ShaderMaterial:
-				var material = ShaderMaterial.new()
-				material.shader = ResourceLoader.load("res://dropshadower/shader/ShadowShader.shader", "Shader", false)
+		if item.Sprite != null and not DropshadowCore.node_has_shadow(item):
+			DropshadowCore.init_node_shadow(item)
 
-				item_sprite.material = material
-			
-			item_sprite.material.set_shader_param("sun_angle", angle / (2 * PI))
-			item_sprite.material.set_shader_param("sun_intensity", magn / 10)
-			item_sprite.material.set_shader_param("shadow_dropoff", 	$VBox/V/Sliders/SD_Spinbox.value / 100.0)
-			item_sprite.material.set_shader_param("shadow_strength", 	$VBox/V/Sliders/SS_Spinbox.value / 100.0)
-			item_sprite.material.set_shader_param("blur_radius", 		$VBox/V/Sliders/BR_Spinbox.value)
-			item_sprite.material.set_shader_param("node_rotation", item.global_rotation)
+		if DropshadowCore.node_has_shadow(item):
+			var control_values = self.get_control_values()
+			logv(control_values)
+			DropshadowCore.set_node_shadow(
+				item,
+				angle,
+				magn,
+				int(control_values["shadow_quality"]),
+				int(control_values["shadow_steps"]),
+				control_values["shadow_strength"] / 100.0,
+				control_values["blur_radius"]
+			)
 
 func commit_shadows():
 	if self.Global == null: return
@@ -217,13 +248,8 @@ func commit_shadows():
 	var selected = select_tool.Selected
 	
 	for item in select_tool.Selected:
-		if item.Sprite != null:
-			if DropshadowCore == null:
-				return
-				
-			
-			
-			DropshadowCore.set_node_shadow(item)
+		if DropshadowCore.node_has_shadow(item):
+			DropshadowCore.save_node_shadow(item)
 
 func erase_shadows():
 	if self.Global == null: return
@@ -231,12 +257,8 @@ func erase_shadows():
 	var selected = select_tool.Selected
 	
 	for item in select_tool.Selected:
-		if item.Sprite != null:
-			if DropshadowCore == null:
-				return
-			
+		if DropshadowCore.node_has_shadow(item):
 			DropshadowCore.erase_node_shadow(item)
-			item.Sprite.material = Defaultmat
 				
 func _set_toggled(val):
 	self._toggled = val

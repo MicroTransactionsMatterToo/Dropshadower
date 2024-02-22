@@ -11,7 +11,7 @@ const float blur_offset[3] = {0.0, 2.0, 3.2307692308};
 
 
 // --- INPUT PARAMS ---
-uniform float sun_angle : hint_range(0.0, 1.0) = 0.0;
+uniform float sun_angle : hint_range(-6.28, 6.28) = 0.0;
 uniform float sun_intensity = 0.05;
 uniform int shadow_quality : hint_range(1, 999) = 4;
 uniform int shadow_steps : hint_range(1, 999) = 16;
@@ -130,7 +130,7 @@ vec2 excess_xy(vec2 uv) {
 }
 
 float sun_ang() {
-	float adjust_angle = (PIT - (sun_angle * PIT)) + node_rotation;
+	float adjust_angle = (PIT - sun_angle) + node_rotation;
 	return (PI + adjust_angle) - (PIT / 4.0);
 }
 
@@ -177,8 +177,5 @@ void fragment() {
 	S_COL.a *= shadow_strength;
 	S_COL.a = clamp(S_COL.a, 0.0, 1.0);
 	
-	COLOR = blend(
-		texture_scaled(TEXTURE, P_UV),
-		S_COL
-	);
+	COLOR = S_COL;
 }

@@ -3,6 +3,7 @@ var script_class = "tool"
 
 
 var ShadowShader
+var ShadowMaterial
 var SelectTool
 var SidepanelScene
 
@@ -17,6 +18,7 @@ var using_legacy_storage = false
 
 const RES_PATH = "res://dropshadower/"
 const STORAGE_NODE_ID = 0x954AD03
+const SHADOW_NODE_NAME = "5D03"
 
 enum SelectableTypes {
 	Invalid 		= 0,
@@ -72,6 +74,7 @@ func start() -> void:
 		return
 	
 	self.ShadowShader = ResourceLoader.load(RES_PATH + "shader/ShadowShader.shader", "Shader", false)
+	self.ShadowMaterial = ResourceLoader.load(RES_PATH + "shader/ShadowMaterial.material", "ShaderMaterial", false)
 	self.SidepanelScene = load("res://dropshadower/ui/ShadowEditPanel.tscn")
 	logv("Shader and Scenes loaded")
 
@@ -160,8 +163,76 @@ func _load_data() -> void:
 		self.storage[int(entry)] = shadow_data.as_dict()
 
 # ===== SHADOW FUNCS =====
-func set_node_shadow(node: Node2D) -> int:
-	logv("Setting shadow for %s" % node)
+func node_has_shadow(node: Node2D) -> bool:
+	if node.Sprite == null: return false
+	if not node.has_meta("dropshadow_enabled"): return false
+	return true
+
+func node_shadow_visible(node: Node2D) -> bool:
+	if node.Sprite == null: return false
+	if not node.has_meta("dropshadow_enabled"): return false
+	if not node.get_node(SHADOW_NODE_NAME): return false
+	
+	return node.get_node(SHADOW_NODE_NAME).visible
+	
+func init_node_shadow(node: Node2D) -> int:
+	if node.Sprite == null: return ERR_INVALID_PARAMETER
+	if node.get_node(SHADOW_NODE_NAME) != null: return OK
+	
+	var shadow_node: Sprite = node.Sprite.duplicate(0)
+	shadow_node.material = ShadowMaterial.duplicate(true)
+	shadow_node.z_index = 0
+	shadow_node.z_as_relative = true
+	logv("Material set to %s" % shadow_node.material)
+	shadow_node.name = SHADOW_NODE_NAME
+	node.set_meta("dropshadow_enabled", true)
+	
+	node.add_child(shadow_node, true)
+	node.move_child(shadow_node, 0)
+
+	node.connect("tree_exiting", self, "_handle_node_delete", [node])
+	
+	logv("Created shadow node: %s" % shadow_node)
+	
+	return OK
+
+func get_node_shadow(node):
+	if not node_has_shadow(node):
+		return ERR_INVALID_PARAMETER
+	
+	return node.get_node(SHADOW_NODE_NAME)
+
+	
+func set_node_shadow(node, 
+		sun_angle, 
+		sun_intensity, 
+		shadow_quality, 
+		shadow_steps, 
+		shadow_strength, 
+		blur_radius
+  ):
+	if not node_has_shadow(node): 
+		logv("Unable to set shadow on node without shadow node")
+		return ERR_INVALID_PARAMETER
+		
+	var node_shadow = node.get_node(SHADOW_NODE_NAME)
+	node_shadow.visible = true
+	var mat = node_shadow.material
+	logv("Setting shadow for node: %s, shadow mat: %s" % [node, mat])
+
+	mat.set_shader_param("sun_angle", sun_angle)
+	mat.set_shader_param("sun_intensity", sun_intensity / 10)
+	mat.set_shader_param("shadow_quality", shadow_quality)
+	mat.set_shader_param("shadow_steps", shadow_steps)
+	mat.set_shader_param("shadow_strength", shadow_strength)
+	mat.set_shader_param("blur_radius", blur_radius)
+	var node_rotation = node.global_rotation - (PI if node.Mirror else 0)
+	mat.set_shader_param("node_rotation", node_rotation)
+
+	return
+
+func save_node_shadow(node: Node2D) -> int:
+	logv("Saving shadow for %s" % node)
 	if node == null or not is_instance_valid(node): return ERR_INVALID_PARAMETER
 	var shadow_data = ShadowStruct.new()
 	var err = shadow_data.from_prop(node)
@@ -177,7 +248,7 @@ func set_node_shadow(node: Node2D) -> int:
 
 	return OK
 
-func get_node_shadow(node: Node2D):
+func load_node_shadow(node: Node2D):
 	if node == null or not is_instance_valid(node): return null
 	if not node.has_meta("node_id"):
 		loge("Provided node has no NodeID, returning null")
@@ -196,9 +267,16 @@ func erase_node_shadow(node: Node2D):
 		loge("Provided node has no NodeID, returning null")
 		return null
 
+	node.get_node(SHADOW_NODE_NAME).visible = false
 	self.storage.erase(node.get_meta("node_id"))
 	if self.using_legacy_storage:
 		self.update_legacy_data()
+
+func _handle_node_delete(node):
+	var node_id = node.get_meta("node_id")
+	logv("Node %s (%d) was deleted, removing entry %s" % [node, node_id, JSON.print(self.storage[node_id])])
+	Global.ModMapData["Dropshadower"].erase(node_id)
+	logv("post deletion %s (%d) was deleted, removing entry %s" % [node, node_id, JSON.print(self.storage[node_id])])
 
 func update_legacy_data():
 	if self.legacy_storage_node != null:
@@ -231,18 +309,22 @@ class ShadowStruct extends Reference:
 	var node_id: int
 	var sun_angle 		:= 0.0
 	var sun_intensity 	:= 1.0
-	var shadow_dropoff 	:= 1.0
+	var shadow_quality 	:= 8
+	var shadow_steps	:= 4
 	var shadow_strength := 1.0
 	var blur_radius		:= 10.0
+	var force_z			:= false
 	var dropoff_enabled := true
 
 	var DropShader
+	var ShadowMaterial
 	var SelectTool
 	var Global
+	var DropshadowCore
 
 	# ===== LOGGING =====
 	const LOG_LEVEL = 4
-	const SHADOW_PARAMS = ["sun_angle", "sun_intensity", "shadow_dropoff", "shadow_strength", "blur_radius"]
+	const SHADOW_PARAMS = ["sun_angle", "sun_intensity", "shadow_quality", "shadow_steps", "shadow_strength", "blur_radius"]
 
 	func logv(msg):
 		if LOG_LEVEL > 3:
@@ -286,8 +368,10 @@ class ShadowStruct extends Reference:
 
 	func _init():
 		self.Global = Engine.get_meta("DropshadowGlobal")
+		self.DropshadowCore = Engine.get_meta("DropshadowCore")
 		self.SelectTool = Global.Editor.Tools["SelectTool"]
 		self.DropShader = ResourceLoader.load(RES_PATH + "shader/ShadowShader.shader", "Shader", false)
+		self.ShadowMaterial = ResourceLoader.load(RES_PATH + "shader/ShadowMaterial.material", "ShaderMaterial", false)
 
 	func restore() -> int:
 		if not Engine.has_meta("DropshadowGlobal"):
@@ -303,6 +387,8 @@ class ShadowStruct extends Reference:
 			logi("Attempted to restore ShadowStruct with invalid NodeID: %s" % self.node_id)
 			return ERR_INVALID_DATA
 
+		DropshadowCore.init_node_shadow(prop)
+
 		return self.apply(prop)
 
 	func apply(prop) -> int:
@@ -310,15 +396,16 @@ class ShadowStruct extends Reference:
 			SelectableTypes.Obj, 			\
 			SelectableTypes.PortalClosed, 	\
 			SelectableTypes.PortalFree:
-				var shader_mat = ShaderMaterial.new()
-				shader_mat.shader = DropShader
+				var shader_mat = ShadowMaterial.duplicate(true)
 
 				for val in SHADOW_PARAMS:
 					shader_mat.set_shader_param(val, self.get(val))
 
 				shader_mat.set_shader_param("node_rotation", prop.global_rotation)
 
-				prop.Sprite.material = shader_mat
+
+				prop.get_node(SHADOW_NODE_NAME).material = shader_mat
+				prop.get_node(SHADOW_NODE_NAME).z_index = -999 if self.force_z else 0
 				
 				return OK
 			_:
@@ -332,15 +419,21 @@ class ShadowStruct extends Reference:
 			SelectableTypes.PortalClosed, 	\
 			SelectableTypes.PortalFree:
 				logv("Got SelectableType")
-				var shader_mat = prop.Sprite.material
+				if not DropshadowCore.node_has_shadow(prop): return ERR_INVALID_PARAMETER
+				var shadow_node = prop.get_node(SHADOW_NODE_NAME)
+				var shader_mat = shadow_node.material
 
 				if prop.has_meta("node_id"):
 					self.node_id = prop.get_meta("node_id")
 					logv("Got node_id: 0x%X" % self.node_id)
 
+				self.force_z = shadow_node.z_index != prop.z_index
+
+				logv("Material: %s" % shader_mat)
+				
 				for val in SHADOW_PARAMS:
 					self.set(val, shader_mat.get_shader_param(val))
-					logv("Set param %s to %d" % [val, self.get(val)])
+					logv("Set param %s to %d (%d)" % [val, self.get(val), shader_mat.get_shader_param(val)])
 				
 				return OK
 			_:
