@@ -232,7 +232,7 @@ func set_node_shadow(node,
 	mat.set_shader_param("shadow_steps", shadow_steps)
 	mat.set_shader_param("shadow_strength", shadow_strength)
 	mat.set_shader_param("blur_radius", blur_radius)
-	node_shadow.scale = node.scale
+	#node_shadow.scale = node.scale
 	var node_rotation = node.global_rotation
 	mat.set_shader_param("node_rotation", node_rotation)
 
