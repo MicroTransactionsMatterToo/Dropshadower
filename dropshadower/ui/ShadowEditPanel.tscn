@@ -30,7 +30,7 @@ text = "Enable"
 [node name="V" type="VBoxContainer" parent="VBox"]
 margin_top = 42.0
 margin_right = 323.0
-margin_bottom = 326.0
+margin_bottom = 350.0
 mouse_filter = 0
 
 [node name="DialControlM" type="MarginContainer" parent="VBox/V"]
@@ -121,6 +121,7 @@ margin_left = 109.0
 margin_top = 4.0
 margin_right = 245.0
 margin_bottom = 20.0
+hint_tooltip = "Sets how strong the shadows will be. Higher = Darker"
 focus_mode = 0
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -132,6 +133,7 @@ allow_greater = true
 margin_left = 249.0
 margin_right = 323.0
 margin_bottom = 24.0
+hint_tooltip = "Sets how strong the shadows will be. Higher = Darker"
 focus_next = NodePath("../SQ_Spinbox")
 size_flags_horizontal = 9
 max_value = 200.0
@@ -151,6 +153,7 @@ margin_left = 109.0
 margin_top = 32.0
 margin_right = 245.0
 margin_bottom = 48.0
+hint_tooltip = "Sets the quality of the shadow."
 focus_mode = 0
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -163,6 +166,7 @@ margin_left = 249.0
 margin_top = 28.0
 margin_right = 323.0
 margin_bottom = 52.0
+hint_tooltip = "Sets the quality of the shadow."
 focus_next = NodePath("../BR_Spinbox")
 size_flags_horizontal = 9
 min_value = 1.0
@@ -212,6 +216,7 @@ margin_left = 109.0
 margin_top = 88.0
 margin_right = 245.0
 margin_bottom = 104.0
+hint_tooltip = "Sets the number of \"steps\" taken to reach the shadows radius. High values will cause performance issues"
 focus_mode = 0
 size_flags_horizontal = 3
 size_flags_vertical = 4
@@ -225,6 +230,7 @@ margin_left = 249.0
 margin_top = 84.0
 margin_right = 323.0
 margin_bottom = 108.0
+hint_tooltip = "Sets the number of \"steps\" taken to reach the shadows radius. High values will cause performance issues"
 focus_next = NodePath("../SQ_Spinbox")
 size_flags_horizontal = 9
 min_value = 1.0
@@ -233,3 +239,24 @@ value = 16.0
 rounded = true
 allow_greater = true
 align = 2
+
+[node name="ZMode" type="HBoxContainer" parent="VBox/V"]
+margin_top = 288.0
+margin_right = 323.0
+margin_bottom = 308.0
+
+[node name="Label" type="Label" parent="VBox/V/ZMode"]
+margin_top = 3.0
+margin_right = 104.0
+margin_bottom = 17.0
+text = "Shadow Position"
+
+[node name="Button" type="OptionButton" parent="VBox/V/ZMode"]
+margin_left = 108.0
+margin_right = 323.0
+margin_bottom = 20.0
+hint_tooltip = "Sets whether the shadow should be displayed behind the object, or behind all objects on the same layer"
+size_flags_horizontal = 11
+text = "Behind Object"
+items = [ "Behind Object", null, false, 0, false, "Behind Layer", null, false, 1, false ]
+selected = 0

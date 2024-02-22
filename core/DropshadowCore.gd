@@ -32,6 +32,11 @@ enum SelectableTypes {
 	Roof 			= 8
 }
 
+enum SHADOW_Z_MODE {
+	Prop   = 0,
+	Layer  = 1
+}
+
 
 # ===== LOGGING =====
 const LOG_LEVEL = 4
@@ -156,6 +161,8 @@ func _load_data() -> void:
 		shadow_data.from_dict(self.storage[entry])
 		logv("Loaded for 0x%X, data: %s" % [int(entry), shadow_data])
 		var err = shadow_data.restore()
+		if err == ERR_INVALID_DATA:
+			self.storage.erase(entry)
 		if err != OK:
 			loge("Failed to restore shadow data, error was 0x%X" % err)
 		if self.using_legacy_storage:
@@ -181,7 +188,6 @@ func init_node_shadow(node: Node2D) -> int:
 	
 	var shadow_node: Sprite = node.Sprite.duplicate(0)
 	shadow_node.material = ShadowMaterial.duplicate(true)
-	shadow_node.z_index = 0
 	shadow_node.z_as_relative = true
 	logv("Material set to %s" % shadow_node.material)
 	shadow_node.name = SHADOW_NODE_NAME
@@ -221,15 +227,40 @@ func set_node_shadow(node,
 	logv("Setting shadow for node: %s, shadow mat: %s" % [node, mat])
 
 	mat.set_shader_param("sun_angle", sun_angle)
-	mat.set_shader_param("sun_intensity", sun_intensity / 10)
+	mat.set_shader_param("sun_intensity", sun_intensity)
 	mat.set_shader_param("shadow_quality", shadow_quality)
 	mat.set_shader_param("shadow_steps", shadow_steps)
 	mat.set_shader_param("shadow_strength", shadow_strength)
 	mat.set_shader_param("blur_radius", blur_radius)
-	var node_rotation = node.global_rotation - (PI if node.Mirror else 0)
+	node_shadow.scale = node.scale
+	var node_rotation = node.global_rotation
 	mat.set_shader_param("node_rotation", node_rotation)
 
 	return
+
+func set_node_shadow_z(node: Node2D, z_mode):
+	if not node_has_shadow(node):
+		logv("Unable to set Z-mode of node with no shadow")
+		return ERR_INVALID_PARAMETER
+	
+	var node_shadow = node.get_node(SHADOW_NODE_NAME)
+	logv("Setting node z-level to %s" % z_mode)
+
+	match z_mode:
+		SHADOW_Z_MODE.Prop:
+			node_shadow.z_index = 0
+			node_shadow.z_as_relative = true
+		SHADOW_Z_MODE.Layer:
+			node_shadow.z_index = -1
+			node_shadow.z_as_relative = true
+		_:
+			pass
+
+	logv("Set z-index to %d" % node_shadow.z_index)
+	
+	return OK
+	
+	
 
 func save_node_shadow(node: Node2D) -> int:
 	logv("Saving shadow for %s" % node)
@@ -271,6 +302,8 @@ func erase_node_shadow(node: Node2D):
 	self.storage.erase(node.get_meta("node_id"))
 	if self.using_legacy_storage:
 		self.update_legacy_data()
+
+
 
 func _handle_node_delete(node):
 	var node_id = node.get_meta("node_id")
@@ -359,7 +392,8 @@ class ShadowStruct extends Reference:
 
 	func as_dict() -> Dictionary:
 		var rval = {
-			"node_id": self.node_id
+			"node_id": self.node_id,
+			"force_z": self.force_z
 		}
 		for key in SHADOW_PARAMS:
 			rval[key] = self.get(key)
@@ -405,7 +439,8 @@ class ShadowStruct extends Reference:
 
 
 				prop.get_node(SHADOW_NODE_NAME).material = shader_mat
-				prop.get_node(SHADOW_NODE_NAME).z_index = -999 if self.force_z else 0
+				prop.get_node(SHADOW_NODE_NAME).z_index = -1 if self.force_z else 0
+				prop.get_node(SHADOW_NODE_NAME).z_as_relative = true
 				
 				return OK
 			_:
@@ -427,7 +462,7 @@ class ShadowStruct extends Reference:
 					self.node_id = prop.get_meta("node_id")
 					logv("Got node_id: 0x%X" % self.node_id)
 
-				self.force_z = shadow_node.z_index != prop.z_index
+				self.force_z = shadow_node.z_index == -1
 
 				logv("Material: %s" % shader_mat)
 				
@@ -451,4 +486,5 @@ class ShadowStruct extends Reference:
 				self.set(key, dict[key])
 		
 		self.node_id = dict["node_id"]
+		self.force_z = dict["force_z"]
 		return OK

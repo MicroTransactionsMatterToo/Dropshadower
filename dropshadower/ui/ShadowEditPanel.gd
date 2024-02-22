@@ -69,6 +69,7 @@ func _ready():
 	logv("Connected spinboxes")
 	
 	$VBox/EnableButton.connect("toggled", self, "_toggle_disabled")
+	$VBox/V/ZMode/Button.connect("item_selected", self, "_on_aux_slider_change")
 	
 	var dd_menu_mat = ResourceLoader.load("res://materials/MenuBackground.material")
 	if dd_menu_mat != null:
@@ -145,6 +146,7 @@ func _gui_input(event):
 		if event.button_index in [BUTTON_LEFT, BUTTON_RIGHT, BUTTON_MIDDLE]:
 			logv(self._delete_input_list)
 			self.propagate_call("release_focus", [])
+			
 
 func on_dial_change(angle, magn):
 	logv("Dial Change | A: %.2f, M: %.2f" % [angle, magn])
@@ -160,7 +162,9 @@ func get_control_values() -> Dictionary:
 	for entry in self.control_nodes:
 		var node = self.VC.get_node("Sliders/%s_Spinbox" % entry[0])
 		values[entry[1]] = node.value 
-		
+
+	values["z_mode"] = self.VC.get_node("ZMode/Button").selected
+
 	return values
 	
 func _set_slider_blocking(blocking: bool):
@@ -241,6 +245,7 @@ func update_selected_props(angle, magn):
 				control_values["shadow_strength"] / 100.0,
 				control_values["blur_radius"]
 			)
+			DropshadowCore.set_node_shadow_z(item, control_values["z_mode"])
 
 func commit_shadows():
 	if self.Global == null: return
