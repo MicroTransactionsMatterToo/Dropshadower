@@ -132,6 +132,10 @@ func _process(delta):
 				break
 			
 			self.update_controls_from_prop(item)
+			var shadow = DropshadowCore.get_node_shadow(item)
+			if shadow.material.get_shader_param("node_rotation") != item.global_rotation:
+				shadow.material.set_shader_param("node_rotation", item.global_rotation)
+			
 			self._previous_ref_node = item
 			break
 			

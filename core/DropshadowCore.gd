@@ -88,7 +88,6 @@ func start() -> void:
 	Engine.set_meta("DropshadowCore", self)
 	logv("Engine meta set")
 
-	
 
 	self._bootstrap_sidepanel()
 	self._bootstrap_selectpanel()
@@ -122,7 +121,6 @@ func _bootstrap_legacy_storage() -> void:
 			loge("Failed to load legacy storage data, error was %s" % data_parsed.error)
 			return
 		self.storage = data_parsed.result
-		logv("Loaded legacy data: %s" % data_parsed.result)
 		
 		if Global.ModMapData != null:
 			logv("ModMapData found and legacy data found, migrating")
@@ -154,8 +152,6 @@ func _bootstrap_legacy_storage() -> void:
 
 func _load_data() -> void:
 	logi("Loading shadow data")
-	logv("ModMapData for Dropshadower: %s" % JSON.print(self.storage, "\t"))
-
 	for entry in self.storage.keys():
 		var shadow_data := ShadowStruct.new()
 		shadow_data.from_dict(self.storage[entry])
@@ -189,7 +185,7 @@ func init_node_shadow(node: Node2D) -> int:
 	var shadow_node: Sprite = node.Sprite.duplicate(0)
 	shadow_node.material = ShadowMaterial.duplicate(true)
 	shadow_node.z_as_relative = true
-	logv("Material set to %s" % shadow_node.material)
+	
 	shadow_node.name = SHADOW_NODE_NAME
 	node.set_meta("dropshadow_enabled", true)
 	
@@ -232,9 +228,11 @@ func set_node_shadow(node,
 	mat.set_shader_param("shadow_steps", shadow_steps)
 	mat.set_shader_param("shadow_strength", shadow_strength)
 	mat.set_shader_param("blur_radius", blur_radius)
-	#node_shadow.scale = node.scale
+	mat.set_shader_param("mirror_shadow", -1 if node.Mirror else 1)
+	
 	var node_rotation = node.global_rotation
 	mat.set_shader_param("node_rotation", node_rotation)
+
 
 	return
 
@@ -259,8 +257,6 @@ func set_node_shadow_z(node: Node2D, z_mode):
 	logv("Set z-index to %d" % node_shadow.z_index)
 	
 	return OK
-	
-	
 
 func save_node_shadow(node: Node2D) -> int:
 	logv("Saving shadow for %s" % node)
@@ -347,6 +343,7 @@ class ShadowStruct extends Reference:
 	var shadow_strength := 1.0
 	var blur_radius		:= 10.0
 	var force_z			:= false
+	var mirror_shadow	:= 1
 	var dropoff_enabled := true
 
 	var DropShader
@@ -357,7 +354,15 @@ class ShadowStruct extends Reference:
 
 	# ===== LOGGING =====
 	const LOG_LEVEL = 4
-	const SHADOW_PARAMS = ["sun_angle", "sun_intensity", "shadow_quality", "shadow_steps", "shadow_strength", "blur_radius"]
+	const SHADOW_PARAMS = [
+		"sun_angle", 
+		"sun_intensity", 
+		"shadow_quality", 
+		"shadow_steps", 
+		"shadow_strength", 
+		"blur_radius",
+		"mirror_shadow"
+	]
 
 	func logv(msg):
 		if LOG_LEVEL > 3:
@@ -437,10 +442,11 @@ class ShadowStruct extends Reference:
 
 				shader_mat.set_shader_param("node_rotation", prop.global_rotation)
 
+				var shadow_node = prop.get_node(SHADOW_NODE_NAME)
+				shadow_node.material = shader_mat
+				shadow_node.z_index = -1 if self.force_z else 0
+				shadow_node.z_as_relative = true
 
-				prop.get_node(SHADOW_NODE_NAME).material = shader_mat
-				prop.get_node(SHADOW_NODE_NAME).z_index = -1 if self.force_z else 0
-				prop.get_node(SHADOW_NODE_NAME).z_as_relative = true
 				
 				return OK
 			_:
@@ -467,6 +473,7 @@ class ShadowStruct extends Reference:
 				logv("Material: %s" % shader_mat)
 				
 				for val in SHADOW_PARAMS:
+					if shader_mat.get_shader_param(val) == null: continue
 					self.set(val, shader_mat.get_shader_param(val))
 					logv("Set param %s to %d (%d)" % [val, self.get(val), shader_mat.get_shader_param(val)])
 				

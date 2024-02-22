@@ -11,11 +11,12 @@ const float blur_offset[3] = {0.0, 2.0, 3.2307692308};
 
 
 // --- INPUT PARAMS ---
-uniform float sun_angle : hint_range(-6.28, 6.28) = 0.0;
-uniform float sun_intensity = 0.05;
-uniform int shadow_quality : hint_range(1, 999) = 4;
-uniform int shadow_steps : hint_range(1, 999) = 16;
-uniform float shadow_strength = 1.0;
+uniform float 	sun_angle		: hint_range(-6.28, 6.28) 	= 0.0;
+uniform float 	sun_intensity 								= 0.05;
+uniform int 	shadow_quality	: hint_range(1, 999) 		= 4;
+uniform int 	shadow_steps	: hint_range(1, 999) 		= 16;
+uniform int		mirror_shadow	: hint_range(-1, 1)			= 1;
+uniform float 	shadow_strength								= 1.0;
 
 uniform float blur_radius : hint_range(0.1, 200.0, 1.0) = 10.0;
 
@@ -130,7 +131,13 @@ vec2 excess_xy(vec2 uv) {
 }
 
 float sun_ang() {
-	float adjust_angle = (PIT - sun_angle) + node_rotation;
+	float adjust_angle = 0.0;
+	if (mirror_shadow == -1) {
+		adjust_angle = sun_angle + node_rotation;
+	} else {
+		adjust_angle = (PIT - sun_angle) + node_rotation;
+	}
+	
 	return (PI + adjust_angle) - (PIT / 4.0);
 }
 
@@ -158,17 +165,13 @@ vec4 texture_xorgaussian(sampler2D tex, vec2 uv, vec2 pixel_size, float blurrine
 void fragment() {
 	vec2 P_UV = reverse_uv_scale(UV, true);
 	vec2 TRANS = toCartesian(
-		vec2(sun_ang(), sun_intensity), vec2(0.0)
+		vec2(sun_ang(), sun_intensity * float(mirror_shadow)), vec2(0.0)
 	);
-	vec2 BLUR_DIR = toCartesian(
-		vec2(sun_ang(), 1.0), vec2(0.0)
-	);
-	vec2 ORTHO_BLUR_DIR = toCartesian(
-		vec2(sun_ang() + (PI / 2.0), 1.0), vec2(0.0)
-	);
+	
 	vec2 S_UV = (translate(TRANS) * vec3(P_UV, 1.0)).xy;
 	vec4 S_COL = texture_scaled(TEXTURE, S_UV);
 	S_COL.rgb = vec3(0.0);
+	
 	if (dropoff) {
 		S_COL = texture_xorgaussian(TEXTURE, S_UV, TEXTURE_PIXEL_SIZE, blur_radius, shadow_steps, shadow_quality);
 		S_COL.rgb = vec3(0.0);

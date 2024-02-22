@@ -96,6 +96,7 @@ margin_bottom = 24.0
 focus_next = NodePath("../../Sliders/SS_Spinbox")
 focus_previous = NodePath("../AngleVal")
 focus_mode = 1
+max_value = 600.0
 allow_greater = true
 
 [node name="Spacer3" type="Control" parent="VBox/V/ShadowControl"]
