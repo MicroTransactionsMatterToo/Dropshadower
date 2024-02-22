@@ -227,7 +227,7 @@ func set_node_shadow(node,
 	logv("Setting shadow for node: %s, shadow mat: %s" % [node, mat])
 
 	mat.set_shader_param("sun_angle", sun_angle)
-	mat.set_shader_param("sun_intensity", sun_intensity)
+	mat.set_shader_param("sun_intensity", sun_intensity / 10)
 	mat.set_shader_param("shadow_quality", shadow_quality)
 	mat.set_shader_param("shadow_steps", shadow_steps)
 	mat.set_shader_param("shadow_strength", shadow_strength)
