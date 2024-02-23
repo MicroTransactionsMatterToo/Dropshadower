@@ -195,6 +195,7 @@ func init_node_shadow(node: Node2D) -> int:
 	node.add_child(shadow_node, true)
 	node.move_child(shadow_node, 0)
 
+
 	node.connect("tree_exiting", self, "_handle_node_delete", [node])
 	
 	logv("Created shadow node: %s" % shadow_node)
@@ -349,6 +350,7 @@ class ShadowStruct extends Reference:
 	var mirror_shadow	:= 1
 	var dropoff_enabled := true
 
+
 	var DropShader
 	var ShadowMaterial
 	var SelectTool
@@ -444,6 +446,7 @@ class ShadowStruct extends Reference:
 					shader_mat.set_shader_param(val, self.get(val))
 
 				shader_mat.set_shader_param("node_rotation", prop.global_rotation)
+				shader_mat.set_shader_param("mirror_shadow", -1 if prop.Mirror else 1)
 
 				var shadow_node = prop.get_node(SHADOW_NODE_NAME)
 				shadow_node.material = shader_mat

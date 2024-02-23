@@ -74,6 +74,7 @@ func _ready():
 	$VBox/V/ZMode/Button.connect("item_selected", self, "_on_aux_slider_change")
 	
 	$VBox/CopyPaste/Copy.connect("pressed", self, "_on_copy_pressed")
+	$VBox/CopyPaste/Paste.connect("pressed", self, "_on_paste_pressed")
 	
 	var dd_menu_mat = ResourceLoader.load("res://materials/MenuBackground.material")
 	if dd_menu_mat != null:
@@ -131,13 +132,15 @@ func _process(delta):
 		if self.Global == null: return
 
 		for item in selected:
-			if not DropshadowCore.node_has_shadow(item): continue	
+			if item.Sprite != null: $VBox/CopyPaste/Paste.disabled = false
+			if not DropshadowCore.node_has_shadow(item): continue
 			if item == self._previous_ref_node:
 				break
 			
 			self.update_controls_from_prop(item)
 			
 			self._previous_ref_node = item
+			$VBox/CopyPaste/Copy.disabled = false
 			break
 		
 		for item in selected:
@@ -148,6 +151,8 @@ func _process(delta):
 			
 	if len(selected) == 0:
 		self._previous_ref_node = null
+		$VBox/CopyPaste/Copy.disabled = true
+		$VBox/CopyPaste/Paste.disabled = true
 		
 func _gui_input(event):
 	# Make focus behaviour a bit more intuitive
@@ -217,6 +222,17 @@ func _on_copy_pressed():
 		logv("CopyParams is %s" % self._copy_params.as_dict())
 		
 		return
+		
+func _on_paste_pressed():
+	logv("Paste pressed")
+	var select_tool = Global.Editor.Tools["SelectTool"]
+	var selected = select_tool.Selected
+	
+	for item in selected:
+		if not DropshadowCore.node_has_shadow(item): continue
+		
+		self._copy_params.apply(item)
+		
 	
 func _toggle_disabled(button_state):
 	self.disabled = !button_state
