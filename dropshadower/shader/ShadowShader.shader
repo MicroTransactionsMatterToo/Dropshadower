@@ -133,7 +133,7 @@ vec2 excess_xy(vec2 uv) {
 float sun_ang() {
 	float adjust_angle = 0.0;
 	if (mirror_shadow == -1) {
-		adjust_angle = sun_angle + node_rotation;
+		adjust_angle = (sun_angle) - (node_rotation - PI);
 	} else {
 		adjust_angle = (PIT - sun_angle) + node_rotation;
 	}

@@ -19,6 +19,8 @@ var _previous_ref_node = null
 
 var _delete_input_list
 
+var _copy_params
+
 signal dropshadow_updated(node)
 
 const control_nodes = [
@@ -70,6 +72,8 @@ func _ready():
 	
 	$VBox/EnableButton.connect("toggled", self, "_toggle_disabled")
 	$VBox/V/ZMode/Button.connect("item_selected", self, "_on_aux_slider_change")
+	
+	$VBox/CopyPaste/Copy.connect("pressed", self, "_on_copy_pressed")
 	
 	var dd_menu_mat = ResourceLoader.load("res://materials/MenuBackground.material")
 	if dd_menu_mat != null:
@@ -127,17 +131,19 @@ func _process(delta):
 		if self.Global == null: return
 
 		for item in selected:
-			if not DropshadowCore.node_has_shadow(item): continue
+			if not DropshadowCore.node_has_shadow(item): continue	
 			if item == self._previous_ref_node:
 				break
 			
 			self.update_controls_from_prop(item)
-			var shadow = DropshadowCore.get_node_shadow(item)
-			if shadow.material.get_shader_param("node_rotation") != item.global_rotation:
-				shadow.material.set_shader_param("node_rotation", item.global_rotation)
 			
 			self._previous_ref_node = item
 			break
+		
+		for item in selected:
+			if not DropshadowCore.node_has_shadow(item): continue
+			var shadow = DropshadowCore.get_node_shadow(item)
+			shadow.material.set_shader_param("node_rotation", item.global_rotation)
 			
 			
 	if len(selected) == 0:
@@ -196,6 +202,21 @@ func _on_aux_slider_change(val):
 	logv("AUX CHANGE")
 	self.update_selected_props(self.ShadowControl.angle, self.ShadowControl.magnitude)
 	self.commit_shadows()
+	
+func _on_copy_pressed():
+	logv("Copy pressed")
+	var select_tool = Global.Editor.Tools["SelectTool"]
+	var selected = select_tool.Selected
+	
+	for item in selected:
+		if not DropshadowCore.node_has_shadow(item): continue
+		
+		logv("Copying shadow params from %s" % item)
+		self._copy_params = DropshadowCore.ShadowStruct.new()
+		self._copy_params.from_prop(item)
+		logv("CopyParams is %s" % self._copy_params.as_dict())
+		
+		return
 	
 func _toggle_disabled(button_state):
 	self.disabled = !button_state

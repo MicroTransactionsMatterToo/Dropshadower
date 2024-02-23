@@ -152,19 +152,22 @@ func _bootstrap_legacy_storage() -> void:
 
 func _load_data() -> void:
 	logi("Loading shadow data")
+	var cull_list = []
 	for entry in self.storage.keys():
 		var shadow_data := ShadowStruct.new()
 		shadow_data.from_dict(self.storage[entry])
 		logv("Loaded for 0x%X, data: %s" % [int(entry), shadow_data])
 		var err = shadow_data.restore()
 		if err == ERR_INVALID_DATA:
-			self.storage.erase(entry)
+			Global.ModMapData["Dropshadower"].erase(entry)
 		if err != OK:
 			loge("Failed to restore shadow data, error was 0x%X" % err)
-		if self.using_legacy_storage:
-			self.storage.erase(entry)
-		self.storage[int(entry)] = shadow_data.as_dict()
-
+			continue
+		else:
+			if self.using_legacy_storage:
+				self.storage.erase(entry)
+			self.storage[int(entry)] = shadow_data.as_dict()
+	
 # ===== SHADOW FUNCS =====
 func node_has_shadow(node: Node2D) -> bool:
 	if node.Sprite == null: return false
