@@ -146,7 +146,10 @@ func _process(delta):
 		for item in selected:
 			if not DropshadowCore.node_has_shadow(item): continue
 			var shadow = DropshadowCore.get_node_shadow(item)
+			if shadow.material == null: continue
 			shadow.material.set_shader_param("node_rotation", item.global_rotation)
+			shadow.material.set_shader_param("mirror_shadow", -1 if item.Mirror else 1)
+			
 			
 			
 	if len(selected) == 0:

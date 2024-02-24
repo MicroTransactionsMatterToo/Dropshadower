@@ -240,6 +240,16 @@ func set_node_shadow(node,
 
 	return
 
+func update_node_mirror(node: Node2D):
+	if not node_has_shadow(node):
+		return ERR_INVALID_PARAMETER
+	
+	var shadow_node = node.get_node(SHADOW_NODE_NAME)
+	if shadow_node.material != null:
+		shadow_node.material.set_shader_param("mirror_shadow", -1 if node.Mirror else 1)
+
+	return OK
+
 func set_node_shadow_z(node: Node2D, z_mode):
 	if not node_has_shadow(node):
 		logv("Unable to set Z-mode of node with no shadow")

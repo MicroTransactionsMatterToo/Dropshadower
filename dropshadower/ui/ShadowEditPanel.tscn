@@ -158,7 +158,7 @@ hint_tooltip = "Sets the quality of the shadow."
 focus_mode = 0
 size_flags_horizontal = 3
 size_flags_vertical = 4
-max_value = 999.0
+max_value = 50.0
 value = 4.0
 rounded = true
 
