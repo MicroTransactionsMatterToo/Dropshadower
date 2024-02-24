@@ -1,7 +1,7 @@
 {
 	"name": "Dropshadower",
 	"unique_id": "MBMM.Dropshadower",
-	"version": "1.1.1",
+	"version": "1.2.0",
 	"author": "MBMM",
 	"description": "Adds semi-automated dropshadows to Dungeondraft",
 	"dd_version": "1.1.0.4",
